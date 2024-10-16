@@ -10,4 +10,5 @@ func AuthRoutes(r *gin.Engine) {
 	r.POST("/signup", controller.Register)
 	r.GET("/get-user", controller.GetUser)
 	r.GET("/logout", controller.Logout)
+	r.GET("/getuser/:id", controller.GetUserById)
 }

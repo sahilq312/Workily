@@ -91,6 +91,25 @@ func Register(c *gin.Context) {
 	})
 }
 
+func GetUserById(c *gin.Context) {
+	// Get id from params
+	id := c.Params.ByName("id")
+
+	//find user with the given id
+	var user model.User
+	if err := initializer.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		// If no user is found, return a 404 error
+		c.JSON(404, gin.H{
+			"error": "No user found",
+		})
+		return
+	}
+	// return user
+	c.JSON(200, gin.H{
+		"user": user,
+	})
+}
+
 func GetUser(c *gin.Context) {
 	//Get User from Session
 

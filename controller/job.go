@@ -6,7 +6,7 @@ import (
 
 func CreateJob(c *gin.Context) {
 	// Get request body
-
+	
 	// Create job
 
 	// Return job
