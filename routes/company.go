@@ -6,9 +6,10 @@ import (
 )
 
 func CompanyRoutes(r *gin.Engine) {
-	r.POST("/create-company", controller.CreateCompany)
-	r.GET("/get-company/:id", controller.GetCompany)
-	r.PUT("/update-company/:id", controller.UpdateCompany)
-	r.DELETE("/delete-company/:id", controller.DeleteCompany)
-	r.GET("/get-all-companies", controller.GetAllCompanies)
+	company := r.Group("/company")
+	company.POST("/create", controller.CreateCompany)
+	company.GET("/get/:id", controller.GetCompany)
+	company.PUT("/update/:id", controller.UpdateCompany)
+	company.DELETE("/delete/:id", controller.DeleteCompany)
+	company.GET("/get-all-companies", controller.GetAllCompanies)
 }

@@ -6,9 +6,10 @@ import (
 )
 
 func AuthRoutes(r *gin.Engine) {
-	r.POST("/login", controller.Login)
-	r.POST("/signup", controller.Register)
-	r.GET("/get-user", controller.GetUser)
-	r.GET("/logout", controller.Logout)
-	r.GET("/getuser/:id", controller.GetUserById)
+	auth := r.Group("/auth")
+	auth.POST("/login", controller.Login)
+	auth.POST("/signup", controller.Register)
+	auth.GET("/get-user", controller.GetUser)
+	auth.GET("/logout", controller.Logout)
+	auth.GET("/getuser/:id", controller.GetUserById)
 }

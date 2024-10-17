@@ -6,9 +6,9 @@ import (
 )
 
 func PostRoutes(r *gin.Engine) {
-	r.POST("/create-post", controller.CreatePost)
-	r.GET("/get-posts", controller.GetPosts)
-	r.GET("/get-post/:id", controller.GetPost)
-	r.PUT("/update-post/:id", controller.UpdatePost)
-	r.DELETE("/delete-post/:id", controller.DeletePost)
+	post := r.Group("/post")
+	post.POST("/create", controller.CreatePost)
+	post.GET("/get/:id", controller.GetPost)
+	post.PUT("/update/:id", controller.UpdatePost)
+	post.DELETE("/delete/:id", controller.DeletePost)
 }

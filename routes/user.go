@@ -7,6 +7,7 @@ import (
 
 func UserRoutes(r *gin.Engine) {
 	user := r.Group("/user")
-	user.DELETE("/delete/:id", controller.DeleteUser)
+	user.GET("/get/:id", controller.GetUser)
 	user.PUT("/update/:id", controller.UpdateUser)
+	user.DELETE("/delete/:id", controller.DeleteUser)
 }

@@ -6,6 +6,7 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		
 
 		// Validate token
 

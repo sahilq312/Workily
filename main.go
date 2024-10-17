@@ -46,6 +46,7 @@ func main() {
 	routes.PostRoutes(r)
 	routes.CompanyRoutes(r)
 	routes.UserRoutes(r)
+	routes.JobRoutes(r)
 	// Create a new HTTP server
 	srv := &http.Server{
 		Addr:    ":" + os.Getenv("PORT"),
