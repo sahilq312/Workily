@@ -113,9 +113,6 @@ func GetUserById(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	//Get User from Session
 
-	c.JSON(200, gin.H{
-		"user": "user",
-	})
 	//Return User
 }
 
