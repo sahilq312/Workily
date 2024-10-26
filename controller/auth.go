@@ -113,7 +113,6 @@ func GetUserById(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	//Get User from Session
 
-	//Return User
 }
 
 func Logout(c *gin.Context) {
