@@ -9,8 +9,8 @@ type User struct {
 	Password   string       `json:"-"`
 	Experience []Experience `json:"experience" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Posts      []Post       `json:"posts" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Skills     []string     `json:"skills" gorm:"type:text[]"`
+	Skills     []Skill      `json:"skills" gorm:"many2many:user_skills"`
 	Education  []Education  `json:"education" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Followers  []User       `json:"followers" gorm:"many2many:user_followers;constraint:OnDelete:CASCADE"`
-	Following  []User       `json:"following" gorm:"many2many:user_following;constraint:OnDelete:CASCADE"`
+	Likes      []Like       `json:"likes" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Comments   []Comment    `json:"comments" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }

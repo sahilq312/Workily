@@ -15,6 +15,6 @@ type Experience struct {
 	StartDate   time.Time `json:"start_date"`
 	EndDate     time.Time `json:"end_date"`
 	UserID      uint      `json:"user_id"`
-	User        User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"` // Experience belongs to a user
-	Skills      []string  `json:"skills" gorm:"type:text[]"`
+	User        User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Skills      []Skill   `json:"skills" gorm:"many2many:experience_skills"`
 }

@@ -2,129 +2,120 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sahilq312/workly/initializer"
 	"github.com/sahilq312/workly/model"
 )
 
+// CreatePost creates a new post
 func CreatePost(c *gin.Context) {
-	//Get request body
 	var body struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
 		UserID  uint   `json:"user_id"`
 	}
-	err := c.BindJSON(&body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
-		})
+	if err := c.BindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
-	//Create post
+
 	post := model.Post{
 		Title:   body.Title,
 		Content: body.Content,
 		UserID:  body.UserID,
 	}
-	result := initializer.DB.Create(&post)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Can store the post",
-		})
-		return
-	}
-	//Return post
-	c.JSON(http.StatusCreated, gin.H{
-		"job": result,
-	})
 
-}
-
-func GetPosts(c *gin.Context) {
-	id := c.Param("id")
-	post := model.Post{}
-	result := initializer.DB.First(&post, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Post not found",
-		})
+	if result := initializer.DB.Create(&post); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"post": post,
-	})
+	c.JSON(http.StatusCreated, gin.H{"message": "Post created successfully", "post": post})
 }
 
+// GetPost retrieves a single post by ID
 func GetPost(c *gin.Context) {
-	id := c.Param("id")
-	post := model.Post{}
-	result := initializer.DB.First(&post, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Post not found",
-		})
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"post": post,
-	})
+	var post model.Post
+	if result := initializer.DB.First(&post, uint(id)); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"post": post})
 }
 
-func UpdatePost(c *gin.Context) {
-	id := c.Param("id")
-	post := model.Post{}
-	result := initializer.DB.First(&post, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Post not found",
-		})
+// GetPosts retrieves all posts
+func GetPosts(c *gin.Context) {
+	var posts []model.Post
+	if result := initializer.DB.Find(&posts); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve posts"})
 		return
 	}
-	var body struct { // Define the structure of the request body
-		Title   string `json:"title"` // Title of the job
+
+	c.JSON(http.StatusOK, gin.H{"posts": posts})
+}
+
+// UpdatePost updates a post by ID
+func UpdatePost(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+
+	var body struct {
+		Title   string `json:"title"`
 		Content string `json:"content"`
 	}
-	err := c.BindJSON(&body) // Bind the request body to the defined structure
-	if err != nil {          // If there's an error while binding the request body
-		c.JSON(http.StatusBadRequest, gin.H{ // Return a bad request response
-			"error": "Invalid request body", // Error message
-		})
+	if err := c.BindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Update post
-	initializer.DB.Model(&model.Post{}).Where("id = ?", id).Updates(body) // Update the post with the specified ID
-	// Return post
-	c.JSON(http.StatusOK, gin.H{ // If the post is updated successfully, return a success response
-		"message": "Post updated successfully", // Success message
-	})
+	var post model.Post
+	if result := initializer.DB.First(&post, uint(id)); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		return
+	}
+
+	// Update fields
+	post.Title = body.Title
+	post.Content = body.Content
+
+	if result := initializer.DB.Save(&post); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Post updated successfully", "post": post})
 }
 
+// DeletePost deletes a post by ID
 func DeletePost(c *gin.Context) {
-	//Get post
-	id := c.Param("id")
-	post := model.Post{}
-	result := initializer.DB.First(&post, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Post not found",
-		})
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-	//Delete post
-	result = initializer.DB.Delete(&post)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Can delete the post",
-		})
+
+	var post model.Post
+	if result := initializer.DB.First(&post, uint(id)); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 		return
 	}
-	//Return post
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Post deleted successfully",
-	})
+
+	if result := initializer.DB.Delete(&post); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully"})
 }
