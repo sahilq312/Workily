@@ -21,17 +21,13 @@ func HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-// CompareHashedPassword compares a plain-text password with a bcrypt-hashed password
 func CompareHashedPassword(password, hashedPassword string) (bool, error) {
-	// Compare the provided password with the hashed password
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
-		// If there's an error, the password is incorrect
 		if err == bcrypt.ErrMismatchedHashAndPassword {
 			return false, nil
 		}
 		return false, fmt.Errorf("error comparing passwords: %w", err)
 	}
-	// If no error, the password matches
 	return true, nil
 }

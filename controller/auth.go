@@ -1,7 +1,12 @@
 package controller
 
 import (
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/sahilq312/workly/initializer"
 	"github.com/sahilq312/workly/model"
 	"github.com/sahilq312/workly/utils"
@@ -9,36 +14,53 @@ import (
 
 // Login function to authenticate a user
 func Login(c *gin.Context) {
-	// Get the request body
-	var body struct {
+	type loginRequest struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
-	// Bind the JSON body to the struct
+	var body loginRequest
 	if err := c.BindJSON(&body); err != nil {
-		c.JSON(400, gin.H{"error": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	// Check if user exists
 	var user model.User
 	result := initializer.DB.Where("email = ?", body.Email).First(&user)
 	if result.Error != nil {
-		c.JSON(400, gin.H{"error": "User does not exist"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not exist"})
 		return
 	}
 
-	// Compare hashed password
 	match, err := utils.CompareHashedPassword(body.Password, user.Password)
 	if err != nil || !match {
-		c.JSON(400, gin.H{"error": "Invalid password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
 		return
 	}
 
-	// Return user details
-	c.JSON(200, gin.H{
-		"user": user,
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"iat":     time.Now().Unix(),
+	})
+
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT secret not set"})
+		return
+	}
+
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in generating JWT token"})
+		return
+	}
+
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("Authorization", tokenString, 3600*24*30, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": user, // Consider returning a sanitized user object
 	})
 }
 
@@ -57,11 +79,10 @@ func Register(c *gin.Context) {
 	}
 
 	//Check if user already exist
-	userExist := model.User{Email: body.Email}
-	initializer.DB.First(&userExist)
-	if userExist.ID != 0 {
+	var userExist model.User
+	if initializer.DB.Where("email = ?", body.Email).First(&userExist).Error == nil && userExist.ID != 0 {
 		c.JSON(400, gin.H{
-			"error": "User already exist",
+			"error": "User already exists",
 		})
 		return
 	}
@@ -85,6 +106,7 @@ func Register(c *gin.Context) {
 		})
 	}
 	//set Session
+
 	//Return User and session
 	c.JSON(200, gin.H{
 		"user": user,

@@ -7,6 +7,7 @@ import (
 
 func JobRoutes(r *gin.Engine) {
 	job := r.Group("/job")
+	job.GET("/", controller.GetAllJobs)
 	job.POST("/create", controller.CreateJob)
 	job.GET("/get/:id", controller.GetJob)
 	job.PUT("/update/:id", controller.UpdateJob)
