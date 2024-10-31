@@ -10,49 +10,64 @@ import (
 
 // CreateJob creates a new job
 func CreateJob(c *gin.Context) {
+	// Retrieve company from context
+	company, ok := c.Get("company")
+	if !ok || company == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Company not found"})
+		return
+	}
+	companyModel, ok := company.(model.Company)
+	if !ok || companyModel.ID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
+		return
+	}
+
+	// Bind request body
 	var body struct {
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
 		Location    string   `json:"location"`
 		Salary      string   `json:"salary"`
-		CompanyID   uint     `json:"company_id"`
 		Skills      []string `json:"skills"` // Skill names
 	}
-
 	if err := c.BindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	if body.Title == "" || body.Description == "" || body.Location == "" || body.Salary == "" || body.CompanyID == 0 || len(body.Skills) == 0 {
+	// Validate required fields
+	if body.Title == "" || body.Description == "" || body.Location == "" || body.Salary == "" || len(body.Skills) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
 		return
 	}
 
-	// Find or create skills in the Skill table
+	// Fetch or create skills
 	var skills []model.Skill
 	for _, skillName := range body.Skills {
 		var skill model.Skill
-		initializer.DB.FirstOrCreate(&skill, model.Skill{Name: skillName})
+		if err := initializer.DB.FirstOrCreate(&skill, model.Skill{Name: skillName}).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing skills"})
+			return
+		}
 		skills = append(skills, skill)
 	}
 
+	// Create the job
 	job := model.Job{
 		Title:       body.Title,
 		Description: body.Description,
 		Location:    body.Location,
 		Salary:      body.Salary,
-		CompanyID:   body.CompanyID,
+		CompanyID:   companyModel.ID,
 		Skills:      skills,
 	}
-
-	result := initializer.DB.Create(&job)
-	if result.Error != nil {
+	if err := initializer.DB.Create(&job).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create job"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"job": job})
+	// Return the created job
+	c.JSON(http.StatusCreated, gin.H{"data": job})
 }
 
 // GetJob retrieves a job by ID
@@ -116,7 +131,15 @@ func UpdateJob(c *gin.Context) {
 
 // DeleteJob deletes a job by ID
 func DeleteJob(c *gin.Context) {
+	company, _ := c.Get("company")
 	id := c.Param("id")
+
+	valid := initializer.DB.Model(&model.Job{}).Where("id = ? AND company_id = ?", id, company).First(&model.Job{}).Error
+	if valid != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "You are not authorized to delete this job"})
+		return
+	}
+
 	var job model.Job
 	result := initializer.DB.First(&job, id)
 	if result.Error != nil {

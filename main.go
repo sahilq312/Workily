@@ -46,14 +46,15 @@ func main() {
 func setupRoutes(r *gin.Engine) {
 	r.GET("/", welcomeHandler)
 	r.GET("/health", middleware.RequireAuth, healthCheckHandler)
-
-	routes.AuthRoutes(r)
-	routes.PostRoutes(r)
-	routes.CompanyRoutes(r)
-	routes.UserRoutes(r)
-	routes.JobRoutes(r)
-	routes.LikeRoutes(r)
-	routes.CommentRoutes(r)
+	r.GET("/company-health", middleware.CompanyAuth, healthCompanyCheckHandler)
+	// Todo
+	routes.AuthRoutes(r)    // Half Required Authorization
+	routes.PostRoutes(r)    // Required Authorization
+	routes.CompanyRoutes(r) // Almost Required Authorization
+	routes.UserRoutes(r)    // Required Authorization only to get , delete , update
+	routes.JobRoutes(r)     // Required Authorization for Company and Users
+	routes.LikeRoutes(r)    // Reqired Authorizaton for users
+	routes.CommentRoutes(r) // Required Authorization
 }
 
 // welcomeHandler handles requests to the root path
@@ -65,6 +66,11 @@ func welcomeHandler(c *gin.Context) {
 func healthCheckHandler(c *gin.Context) {
 	user, _ := c.Get("user")
 	c.JSON(http.StatusOK, gin.H{"message": "Server is healthy", "user": user})
+}
+
+func healthCompanyCheckHandler(c *gin.Context) {
+	company, _ := c.Get("company")
+	c.JSON(http.StatusOK, gin.H{"message": "Company auth is Working Fine", "company": company})
 }
 
 // getPort retrieves the server port from the environment variable

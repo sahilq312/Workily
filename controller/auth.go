@@ -14,30 +14,31 @@ import (
 
 // Login function to authenticate a user
 func Login(c *gin.Context) {
+	// type of input
 	type loginRequest struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-
+	// valid request
 	var body loginRequest
 	if err := c.BindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
-
+	// Find user
 	var user model.User
 	result := initializer.DB.Where("email = ?", body.Email).First(&user)
 	if result.Error != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not exist"})
 		return
 	}
-
+	// match password
 	match, err := utils.CompareHashedPassword(body.Password, user.Password)
 	if err != nil || !match {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
 		return
 	}
-
+	// Set jwt token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
@@ -55,12 +56,13 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in generating JWT token"})
 		return
 	}
-
+	// set cookie to browser
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("Authorization", tokenString, 3600*24*30, "/", "", false, true)
 
+	// Sending User as Response
 	c.JSON(http.StatusOK, gin.H{
-		"user": user, // Consider returning a sanitized user object
+		"data": user, // Consider returning a sanitized user object
 	})
 }
 
@@ -105,11 +107,30 @@ func Register(c *gin.Context) {
 			"error": "Error in creating the user",
 		})
 	}
-	//set Session
+	// Set jwt token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"iat":     time.Now().Unix(),
+	})
 
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT secret not set"})
+		return
+	}
+
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in generating JWT token"})
+		return
+	}
+	// set cookie to browser
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("Authorization", tokenString, 3600*24*30, "/", "", false, true)
 	//Return User and session
 	c.JSON(200, gin.H{
-		"user": user,
+		"data": user,
 	})
 }
 
@@ -128,17 +149,30 @@ func GetUserById(c *gin.Context) {
 	}
 	// return user
 	c.JSON(200, gin.H{
-		"user": user,
+		"data": user,
 	})
 }
 
 func GetUser(c *gin.Context) {
-	//Get User from Session
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "No user found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": user,
+	})
 
 }
 
 func Logout(c *gin.Context) {
 	//Delete Session
-
+	c.SetCookie("Authorization", "", -1, "/", "", false, true)
 	//Return Success
+	c.JSON(http.StatusOK, gin.H{
+		"data": "Logged out successfully",
+	})
 }

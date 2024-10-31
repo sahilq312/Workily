@@ -11,10 +11,20 @@ import (
 
 // CreatePost creates a new post
 func CreatePost(c *gin.Context) {
+	user, ok := c.Get("user")
+	if !ok || user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+	userID := user.(model.User).ID
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	var body struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
-		UserID  uint   `json:"user_id"`
 	}
 	if err := c.BindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -24,7 +34,7 @@ func CreatePost(c *gin.Context) {
 	post := model.Post{
 		Title:   body.Title,
 		Content: body.Content,
-		UserID:  body.UserID,
+		UserID:  userID,
 	}
 
 	if result := initializer.DB.Create(&post); result.Error != nil {

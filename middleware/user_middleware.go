@@ -16,6 +16,7 @@ func RequireAuth(c *gin.Context) {
 	tokenString, err := c.Cookie("Authorization")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization cookie not found"})
+		c.Abort()
 		return
 	}
 
@@ -27,18 +28,21 @@ func RequireAuth(c *gin.Context) {
 	})
 	if err != nil || !token.Valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+		c.Abort()
 		return
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		c.Abort()
 		return
 	}
 
 	exp, ok := claims["exp"].(float64)
 	if !ok || float64(time.Now().Unix()) > exp {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
+		c.Abort()
 		return
 	}
 
