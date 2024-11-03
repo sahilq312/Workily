@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sahilq312/workly/initializer"
 	"github.com/sahilq312/workly/middleware"
@@ -21,8 +22,8 @@ func init() {
 }
 
 func main() {
-	r := gin.New()
-
+	r := gin.Default()
+	r.Use(cors.Default())
 	// Set up health check routes
 	setupRoutes(r)
 
