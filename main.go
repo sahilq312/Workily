@@ -23,11 +23,21 @@ func init() {
 
 func main() {
 	r := gin.Default()
-	r.Use(cors.Default())
-	// Set up health check routes
+
+	// Set up custom CORS configuration
+	corsConfig := cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // Allow your frontend origin here
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	r.Use(cors.New(corsConfig))
+
+	// Set up routes and start the server
 	setupRoutes(r)
 
-	// Create a new HTTP server
 	srv := &http.Server{
 		Addr:    ":" + getPort(),
 		Handler: r,
@@ -38,7 +48,6 @@ func main() {
 
 	go startServer(srv)
 
-	// Wait for interrupt signal
 	<-ctx.Done()
 	gracefulShutdown(srv)
 }
@@ -48,22 +57,19 @@ func setupRoutes(r *gin.Engine) {
 	r.GET("/", welcomeHandler)
 	r.GET("/health", middleware.RequireAuth, healthCheckHandler)
 	r.GET("/company-health", middleware.CompanyAuth, healthCompanyCheckHandler)
-	// Todo
-	routes.AuthRoutes(r)    // Half Required Authorization
-	routes.PostRoutes(r)    // Required Authorization
-	routes.CompanyRoutes(r) // Almost Required Authorization
-	routes.UserRoutes(r)    // Required Authorization only to get , delete , update
-	routes.JobRoutes(r)     // Required Authorization for Company and Users
-	routes.LikeRoutes(r)    // Reqired Authorizaton for users
-	routes.CommentRoutes(r) // Required Authorization
+	routes.AuthRoutes(r)
+	routes.PostRoutes(r)
+	routes.CompanyRoutes(r)
+	routes.UserRoutes(r)
+	routes.JobRoutes(r)
+	routes.LikeRoutes(r)
+	routes.CommentRoutes(r)
 }
 
-// welcomeHandler handles requests to the root path
 func welcomeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Welcome to Workly"})
 }
 
-// healthCheckHandler handles health check requests
 func healthCheckHandler(c *gin.Context) {
 	user, _ := c.Get("user")
 	c.JSON(http.StatusOK, gin.H{"message": "Server is healthy", "user": user})
@@ -74,7 +80,6 @@ func healthCompanyCheckHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Company auth is Working Fine", "company": company})
 }
 
-// getPort retrieves the server port from the environment variable
 func getPort() string {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -83,7 +88,6 @@ func getPort() string {
 	return port
 }
 
-// startServer starts the HTTP server
 func startServer(srv *http.Server) {
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen: %s\n", err)
@@ -92,13 +96,10 @@ func startServer(srv *http.Server) {
 
 func gracefulShutdown(srv *http.Server) {
 	log.Println("Shutting down gracefully, press Ctrl+C again to force")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown: ", err)
 	}
-
 	log.Println("Server exiting")
 }
