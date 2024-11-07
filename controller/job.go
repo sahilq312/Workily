@@ -165,7 +165,7 @@ func GetAllJobs(c *gin.Context) {
 	// Get filtering and search parameters
 	title := c.Query("title")
 	location := c.Query("location")
-	skills := c.QueryArray("skills") // skills provided as an array of skill IDs
+	//skills := c.QueryArray("skills") // skills provided as an array of skill IDs
 	search := c.Query("search")
 
 	// Parse page number if provided
@@ -183,12 +183,12 @@ func GetAllJobs(c *gin.Context) {
 	if location != "" {
 		query = query.Where("location ILIKE ?", "%"+location+"%")
 	}
-	if len(skills) > 0 {
+	/* if len(skills) > 0 {
 		// Join with skills table to filter jobs by skill IDs
 		query = query.Joins("JOIN job_skills ON job_skills.job_id = jobs.id").
 			Where("job_skills.skill_id IN ?", skills).
 			Group("jobs.id")
-	}
+	} */
 	if search != "" {
 		// Apply search across title and description fields
 		query = query.Where("title ILIKE ? OR description ILIKE ?", "%"+search+"%", "%"+search+"%")
