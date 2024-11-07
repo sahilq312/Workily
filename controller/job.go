@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sahilq312/workly/initializer"
@@ -157,9 +158,65 @@ func DeleteJob(c *gin.Context) {
 
 // GetAllJobs retrieves all jobs
 func GetAllJobs(c *gin.Context) {
+	page := 1
+	perPage := 3
+	pageStr := c.Query("page")
+
+	// Get filtering and search parameters
+	title := c.Query("title")
+	location := c.Query("location")
+	skills := c.QueryArray("skills") // skills provided as an array of skill IDs
+	search := c.Query("search")
+
+	// Parse page number if provided
+	if pageStr != "" {
+		page, _ = strconv.Atoi(pageStr)
+	}
+
+	// Initialize query on Job model
+	query := initializer.DB.Model(&model.Job{})
+
+	// Apply filters if provided
+	if title != "" {
+		query = query.Where("title ILIKE ?", "%"+title+"%")
+	}
+	if location != "" {
+		query = query.Where("location ILIKE ?", "%"+location+"%")
+	}
+	if len(skills) > 0 {
+		// Join with skills table to filter jobs by skill IDs
+		query = query.Joins("JOIN job_skills ON job_skills.job_id = jobs.id").
+			Where("job_skills.skill_id IN ?", skills).
+			Group("jobs.id")
+	}
+	if search != "" {
+		// Apply search across title and description fields
+		query = query.Where("title ILIKE ? OR description ILIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	// Count total rows after applying filters
+	var totalRows int64
+	query.Count(&totalRows)
+	totalPages := (totalRows + int64(perPage) - 1) / int64(perPage)
+
+	// Retrieve the jobs with pagination
+	offset := (page - 1) * perPage
 	var jobs []model.Job
-	initializer.DB.Preload("Skills").Find(&jobs)
-	c.JSON(http.StatusOK, gin.H{"jobs": jobs})
+	result := query.Offset(offset).Limit(perPage).Find(&jobs)
+	if result.Error != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error": "No response",
+		})
+		return
+	}
+
+	// Return paginated and filtered results
+	c.JSON(http.StatusOK, gin.H{
+		"jobs":       jobs,
+		"totalPages": totalPages,
+		"page":       page,
+		"totalRows":  totalRows,
+	})
 }
 
 // GetJobsByCompany retrieves jobs by company ID
