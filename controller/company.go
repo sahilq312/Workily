@@ -236,3 +236,38 @@ func GetAllCompanies(c *gin.Context) {
 	// Respond with the list of companies (empty list if none found)
 	c.JSON(http.StatusOK, gin.H{"data": companies})
 }
+
+func GetCompanyJobs(c *gin.Context) {
+	company, ok := c.Get("company")
+	if !ok || company == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Company not found"})
+		return
+	}
+	companyModel := company.(model.Company)
+	if companyModel.ID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
+		return
+	}
+
+	var jobs []model.Job
+	if err := initializer.DB.Where("company_id = ?", companyModel.ID).Find(&jobs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get jobs"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": jobs})
+
+}
+
+func GetCompanyJobById(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
+		return
+	}
+	var job model.Job
+	if err := initializer.DB.First(&job, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": job})
+}

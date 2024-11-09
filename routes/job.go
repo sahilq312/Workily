@@ -13,4 +13,5 @@ func JobRoutes(r *gin.Engine) {
 	job.GET("/get/:id", controller.GetJob)
 	job.PUT("/update/:id", middleware.CompanyAuth, controller.UpdateJob)
 	job.DELETE("/delete/:id", middleware.CompanyAuth, controller.DeleteJob)
+	
 }

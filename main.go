@@ -64,6 +64,7 @@ func setupRoutes(r *gin.Engine) {
 	routes.JobRoutes(r)
 	routes.LikeRoutes(r)
 	routes.CommentRoutes(r)
+	routes.ApplicationRoutes(r)
 }
 
 func welcomeHandler(c *gin.Context) {

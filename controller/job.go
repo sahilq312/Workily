@@ -159,7 +159,7 @@ func DeleteJob(c *gin.Context) {
 // GetAllJobs retrieves all jobs
 func GetAllJobs(c *gin.Context) {
 	page := 1
-	perPage := 3
+	perPage := 10
 	pageStr := c.Query("page")
 
 	// Get filtering and search parameters
@@ -183,12 +183,6 @@ func GetAllJobs(c *gin.Context) {
 	if location != "" {
 		query = query.Where("location ILIKE ?", "%"+location+"%")
 	}
-	/* if len(skills) > 0 {
-		// Join with skills table to filter jobs by skill IDs
-		query = query.Joins("JOIN job_skills ON job_skills.job_id = jobs.id").
-			Where("job_skills.skill_id IN ?", skills).
-			Group("jobs.id")
-	} */
 	if search != "" {
 		// Apply search across title and description fields
 		query = query.Where("title ILIKE ? OR description ILIKE ?", "%"+search+"%", "%"+search+"%")

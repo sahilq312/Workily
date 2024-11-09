@@ -15,4 +15,6 @@ func CompanyRoutes(r *gin.Engine) {
 	company.PUT("/update/:id", middleware.CompanyAuth, controller.UpdateCompany)
 	company.DELETE("/delete/:id", middleware.CompanyAuth, controller.DeleteCompany)
 	company.GET("/get-all-companies", controller.GetAllCompanies)
+	company.GET("/get-company-jobs", middleware.CompanyAuth, controller.GetCompanyJobs)
+	company.GET("/get-company-job/:id", middleware.CompanyAuth, controller.GetCompanyJobById)
 }
